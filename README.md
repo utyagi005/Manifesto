@@ -10,7 +10,9 @@ This manifesto shares what I care about as a computer science student, builder, 
 
 ## View
 
-Open `Manifesto.html` in a browser.
+Open the live deploy preview here: [Uday Tyagi Manifesto](https://agent-69e813d2cd3941a34e6cdac4--utyagimanifesto.netlify.app).
+
+You can also open `Manifesto.html` locally in a browser.
 
 ## About Me
 
