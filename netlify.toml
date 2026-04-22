@@ -1,0 +1,4 @@
+[[redirects]]
+  from = "/"
+  to = "/Manifesto.html"
+  status = 200
