@@ -1,0 +1,312 @@
+
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&display=swap');
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:#000}
+  .gallery{display:grid;grid-template-columns:1fr 1fr;gap:3px;background:#111;padding:3px}
+  .shader-card{position:relative;overflow:hidden;cursor:crosshair;aspect-ratio:16/9}
+  .shader-card canvas{display:block;width:100%;height:100%}
+  .label{position:absolute;bottom:10px;left:12px;font-family:'Space Mono',monospace;font-size:10px;color:rgba(255,255,255,0.5);letter-spacing:0.12em;text-transform:uppercase;pointer-events:none;transition:color 0.3s}
+  .shader-card:hover .label{color:rgba(255,255,255,0.9)}
+  .full-row{grid-column:1/-1}
+  .click-ring{position:absolute;border-radius:50%;pointer-events:none;transform:translate(-50%,-50%) scale(0);animation:ringOut 0.7s ease-out forwards}
+  @keyframes ringOut{0%{transform:translate(-50%,-50%) scale(0);opacity:1}100%{transform:translate(-50%,-50%) scale(1);opacity:0}}
+</style>
+<div class="gallery" id="gallery">
+  <div class="shader-card" id="c0"><canvas id="cv0"></canvas><div class="label">01 — neural weave</div></div>
+  <div class="shader-card" id="c1"><canvas id="cv1"></canvas><div class="label">02 — plasma bloom</div></div>
+  <div class="shader-card" id="c2"><canvas id="cv2"></canvas><div class="label">03 — gravity well</div></div>
+  <div class="shader-card" id="c3"><canvas id="cv3"></canvas><div class="label">04 — aurora mesh</div></div>
+  <div class="shader-card full-row" id="c4"><canvas id="cv4"></canvas><div class="label">05 — liquid chrome</div></div>
+</div>
+<script>
+const cards=[...document.querySelectorAll('.shader-card')];
+const cvs=[...document.querySelectorAll('canvas')];
+const ctxs=cvs.map(c=>c.getContext('2d'));
+const mouse=[{x:.5,y:.5,px:.5,py:.5},{x:.5,y:.5,px:.5,py:.5},{x:.5,y:.5,px:.5,py:.5},{x:.5,y:.5,px:.5,py:.5},{x:.5,y:.5,px:.5,py:.5}];
+const clicks=[[],[],[],[],[]];
+let W=[],H=[];
+
+function resize(){
+  cvs.forEach((c,i)=>{
+    const r=cards[i].getBoundingClientRect();
+    c.width=Math.round(r.width);
+    c.height=Math.round(r.height);
+    W[i]=c.width;H[i]=c.height;
+  });
+}
+resize();
+window.addEventListener('resize',()=>{setTimeout(resize,100)});
+
+cards.forEach((card,i)=>{
+  card.addEventListener('mousemove',e=>{
+    const r=card.getBoundingClientRect();
+    mouse[i].px=mouse[i].x;mouse[i].py=mouse[i].y;
+    mouse[i].x=(e.clientX-r.left)/r.width;
+    mouse[i].y=(e.clientY-r.top)/r.height;
+  });
+  card.addEventListener('mouseleave',()=>{mouse[i].x=.5;mouse[i].y=.5});
+  card.addEventListener('click',e=>{
+    const r=card.getBoundingClientRect();
+    const cx=e.clientX-r.left,cy=e.clientY-r.top;
+    clicks[i].push({x:cx/r.width,y:cy/r.height,t:performance.now(),px:cx,py:cy});
+    if(clicks[i].length>8)clicks[i].shift();
+    const ring=document.createElement('div');
+    ring.className='click-ring';
+    ring.style.cssText=`left:${cx}px;top:${cy}px;width:80px;height:80px;border:1.5px solid rgba(255,255,255,0.6)`;
+    card.appendChild(ring);
+    setTimeout(()=>ring.remove(),800);
+  });
+});
+
+// ── Shader 0: Neural Weave ──────────────────────────────────
+const nodes0=Array.from({length:28},(_,i)=>({
+  x:Math.random(),y:Math.random(),
+  vx:(Math.random()-.5)*.0003,vy:(Math.random()-.5)*.0003,
+  r:Math.random()*.012+.004
+}));
+function drawNeural(t){
+  const i=0,ctx=ctxs[i],w=W[i],h=H[i],mx=mouse[i].x,my=mouse[i].y;
+  ctx.fillStyle='rgba(4,6,12,0.18)';
+  ctx.fillRect(0,0,w,h);
+  nodes0.forEach(n=>{
+    const dx=mx-n.x,dy=my-n.y,dist=Math.sqrt(dx*dx+dy*dy);
+    n.x+=n.vx+dx*(0.00004/(dist+.1));
+    n.y+=n.vy+dy*(0.00004/(dist+.1));
+    if(n.x<0||n.x>1)n.vx*=-1;
+    if(n.y<0||n.y>1)n.vy*=-1;
+    n.x=Math.max(0,Math.min(1,n.x));
+    n.y=Math.max(0,Math.min(1,n.y));
+  });
+  // Connections
+  for(let a=0;a<nodes0.length;a++){
+    for(let b=a+1;b<nodes0.length;b++){
+      const na=nodes0[a],nb=nodes0[b];
+      const dx=(na.x-nb.x)*w,dy=(na.y-nb.y)*h;
+      const d=Math.sqrt(dx*dx+dy*dy);
+      if(d<160){
+        const alpha=(1-d/160)*0.5;
+        const dmx=(mx-.5),dmy=(my-.5);
+        const hue=200+dmx*60;
+        ctx.strokeStyle=`hsla(${hue},80%,65%,${alpha})`;
+        ctx.lineWidth=0.8;
+        ctx.beginPath();
+        ctx.moveTo(na.x*w,na.y*h);
+        ctx.lineTo(nb.x*w,nb.y*h);
+        ctx.stroke();
+      }
+    }
+  }
+  // Nodes
+  nodes0.forEach(n=>{
+    const dx=(n.x-mx),dy=(n.y-my);
+    const dist=Math.sqrt(dx*dx+dy*dy);
+    const glow=Math.max(0,1-dist*3);
+    const hue=200+(mx-.5)*80;
+    ctx.beginPath();
+    ctx.arc(n.x*w,n.y*h,n.r*w*(1+glow*.8),0,Math.PI*2);
+    ctx.fillStyle=`hsla(${hue},90%,${60+glow*30}%,${0.6+glow*.4})`;
+    ctx.fill();
+  });
+  // Click ripples
+  clicks[i].forEach(c=>{
+    const age=(t-c.t)/1000;
+    if(age>1.2)return;
+    const rad=age*w*.35;
+    ctx.beginPath();
+    ctx.arc(c.x*w,c.y*h,rad,0,Math.PI*2);
+    ctx.strokeStyle=`rgba(120,200,255,${(1-age/1.2)*.4})`;
+    ctx.lineWidth=1;
+    ctx.stroke();
+  });
+}
+
+// ── Shader 1: Plasma Bloom ──────────────────────────────────
+let plasma_t=0;
+function drawPlasma(t){
+  const i=1,ctx=ctxs[i],w=W[i],h=H[i],mx=mouse[i].x,my=mouse[i].y;
+  plasma_t=t*.0008;
+  const imgd=ctx.createImageData(w,h);
+  const d=imgd.data;
+  const step=3;
+  for(let py=0;py<h;py+=step){
+    for(let px=0;px<w;px+=step){
+      const x=px/w,y=py/h;
+      const dx=x-mx,dy=y-my;
+      const dist=Math.sqrt(dx*dx+dy*dy);
+      const v1=Math.sin(x*8+plasma_t*2+dist*12);
+      const v2=Math.sin(y*6-plasma_t*1.5+Math.sin(plasma_t+x*4)*2);
+      const v3=Math.sin(dist*10-plasma_t*3);
+      const v=(v1+v2+v3)/3;
+      const hue=(v+1)*180+mx*120;
+      const [r,g,b]=hslToRgb(hue/360,.8,.45+v*.25);
+      for(let oy=0;oy<step&&py+oy<h;oy++){
+        for(let ox=0;ox<step&&px+ox<w;ox++){
+          const idx=((py+oy)*w+(px+ox))*4;
+          d[idx]=r;d[idx+1]=g;d[idx+2]=b;d[idx+3]=255;
+        }
+      }
+    }
+  }
+  ctx.putImageData(imgd,0,0);
+  clicks[i].forEach(c=>{
+    const age=(t-c.t)/1000;
+    if(age>1.5)return;
+    const rad=age*Math.min(w,h)*.5;
+    const g2=ctx.createRadialGradient(c.x*w,c.y*h,0,c.x*w,c.y*h,rad);
+    g2.addColorStop(0,`rgba(255,255,255,${(1-age/1.5)*.5})`);
+    g2.addColorStop(1,'rgba(255,255,255,0)');
+    ctx.fillStyle=g2;
+    ctx.fillRect(0,0,w,h);
+  });
+}
+
+// ── Shader 2: Gravity Well ──────────────────────────────────
+const particles2=Array.from({length:300},()=>({
+  x:Math.random(),y:Math.random(),
+  vx:(Math.random()-.5)*.002,vy:(Math.random()-.5)*.002,
+  life:Math.random(),maxLife:Math.random()*.8+.4,
+  s:Math.random()*.006+.001
+}));
+function drawGravity(t){
+  const i=2,ctx=ctxs[i],w=W[i],h=H[i],mx=mouse[i].x,my=mouse[i].y;
+  ctx.fillStyle='rgba(2,0,8,0.15)';ctx.fillRect(0,0,w,h);
+  const extraWells=clicks[i].filter(c=>(t-c.t)<3000);
+  particles2.forEach(p=>{
+    p.life+=0.008;
+    if(p.life>p.maxLife){p.x=Math.random();p.y=Math.random();p.vx=(Math.random()-.5)*.001;p.vy=(Math.random()-.5)*.001;p.life=0;p.maxLife=Math.random()*.8+.4;}
+    const dx=mx-p.x,dy=my-p.y,d2=dx*dx+dy*dy+.002;
+    p.vx+=dx*0.00005/d2;p.vy+=dy*0.00005/d2;
+    extraWells.forEach(c=>{
+      const wdx=c.x-p.x,wdy=c.y-p.y,wd2=wdx*wdx+wdy*wdy+.001;
+      p.vx+=wdx*0.00008/wd2;p.vy+=wdy*0.00008/wd2;
+    });
+    p.vx*=.98;p.vy*=.98;
+    p.x+=p.vx;p.y+=p.vy;
+    if(p.x<-.05||p.x>1.05||p.y<-.05||p.y>1.05){p.x=Math.random();p.y=Math.random();p.vx=(Math.random()-.5)*.001;p.vy=(Math.random()-.5)*.001;p.life=0;}
+    const spd=Math.sqrt(p.vx*p.vx+p.vy*p.vy);
+    const hue=260+spd*3000;
+    const alpha=Math.sin(p.life/p.maxLife*Math.PI)*.8;
+    ctx.fillStyle=`hsla(${hue},90%,70%,${alpha})`;
+    ctx.fillRect(p.x*w-p.s*w*.5,p.y*h-p.s*h*.5,p.s*w,p.s*h);
+  });
+  // Event horizon ring at cursor
+  const rg=ctx.createRadialGradient(mx*w,my*h,0,mx*w,my*h,Math.min(w,h)*.15);
+  rg.addColorStop(0,'rgba(180,100,255,0.12)');
+  rg.addColorStop(1,'rgba(180,100,255,0)');
+  ctx.fillStyle=rg;ctx.fillRect(0,0,w,h);
+}
+
+// ── Shader 3: Aurora Mesh ──────────────────────────────────
+const ROWS=12,COLS=20;
+const mesh3=Array.from({length:(ROWS+1)*(COLS+1)},(_,i)=>{
+  const col=i%(COLS+1),row=Math.floor(i/(COLS+1));
+  return {bx:col/COLS,by:row/ROWS,ox:0,oy:0};
+});
+function drawAurora(t){
+  const i=3,ctx=ctxs[i],w=W[i],h=H[i],mx=mouse[i].x,my=mouse[i].y;
+  ctx.fillStyle='rgba(0,3,10,0.25)';ctx.fillRect(0,0,w,h);
+  const time=t*.0005;
+  mesh3.forEach((pt,idx)=>{
+    const dx=pt.bx-mx,dy=pt.by-my;
+    const dist=Math.sqrt(dx*dx+dy*dy);
+    const wave=Math.sin(pt.bx*5+time*1.2)*Math.cos(pt.by*4-time*.8);
+    pt.ox=dx*0.04*Math.exp(-dist*2)+wave*.018;
+    pt.oy=dy*0.04*Math.exp(-dist*2)+Math.sin(pt.by*6+time)*0.018;
+  });
+  // Draw quads
+  for(let row=0;row<ROWS;row++){
+    for(let col=0;col<COLS;col++){
+      const tl=mesh3[row*(COLS+1)+col];
+      const tr=mesh3[row*(COLS+1)+col+1];
+      const bl=mesh3[(row+1)*(COLS+1)+col];
+      const br=mesh3[(row+1)*(COLS+1)+col+1];
+      const hue=180+col*8+row*4+(mx-.5)*60;
+      const lum=40+Math.sin(col*.8+time*2+row*.6)*15+(1-Math.hypot(tl.bx-mx,tl.by-my))*20;
+      ctx.fillStyle=`hsla(${hue},70%,${lum}%,0.35)`;
+      ctx.strokeStyle=`hsla(${hue},80%,70%,0.15)`;
+      ctx.lineWidth=0.5;
+      ctx.beginPath();
+      ctx.moveTo((tl.bx+tl.ox)*w,(tl.by+tl.oy)*h);
+      ctx.lineTo((tr.bx+tr.ox)*w,(tr.by+tr.oy)*h);
+      ctx.lineTo((br.bx+br.ox)*w,(br.by+br.oy)*h);
+      ctx.lineTo((bl.bx+bl.ox)*w,(bl.by+bl.oy)*h);
+      ctx.closePath();
+      ctx.fill();ctx.stroke();
+    }
+  }
+  clicks[i].forEach(c=>{
+    const age=(t-c.t)/800;if(age>1)return;
+    ctx.beginPath();ctx.arc(c.x*w,c.y*h,age*w*.3,0,Math.PI*2);
+    ctx.strokeStyle=`rgba(100,255,220,${(1-age)*.6})`;ctx.lineWidth=1.5;ctx.stroke();
+  });
+}
+
+// ── Shader 4: Liquid Chrome ────────────────────────────────
+let chrome_t=0;
+function drawChrome(t){
+  const i=4,ctx=ctxs[i],w=W[i],h=H[i],mx=mouse[i].x,my=mouse[i].y;
+  chrome_t=t*.0004;
+  const imgd=ctx.createImageData(w,h);
+  const d=imgd.data;
+  const step=2;
+  for(let py=0;py<h;py+=step){
+    for(let px=0;px<w;px+=step){
+      const x=px/w,y=py/h;
+      const dx=x-mx,dy=y-my;
+      const dist=Math.sqrt(dx*dx+dy*dy);
+      let nx=x+Math.sin(y*6+chrome_t*1.5+dist*4)*0.04;
+      let ny=y+Math.cos(x*5-chrome_t*1.2+dist*3)*0.04;
+      nx+=dx*0.02;ny+=dy*0.02;
+      const metal=Math.sin(nx*12+chrome_t)*Math.cos(ny*8-chrome_t*1.3)+
+                  Math.sin((nx+ny)*7+chrome_t*.7)*.5;
+      const iridescence=Math.sin(dist*8-chrome_t*2+mx*6)*0.5+0.5;
+      const base=metal*0.5+0.5;
+      const r2=Math.round(180+base*60+iridescence*20);
+      const g2=Math.round(180+base*50-iridescence*15);
+      const b2=Math.round(195+base*55+iridescence*10);
+      for(let oy=0;oy<step&&py+oy<h;oy++){
+        for(let ox=0;ox<step&&px+ox<w;ox++){
+          const idx=((py+oy)*w+(px+ox))*4;
+          d[idx]=Math.min(255,r2);d[idx+1]=Math.min(255,g2);d[idx+2]=Math.min(255,b2);d[idx+3]=255;
+        }
+      }
+    }
+  }
+  ctx.putImageData(imgd,0,0);
+  // Specular highlight at cursor
+  const sg=ctx.createRadialGradient(mx*w,my*h,0,mx*w,my*h,Math.min(w,h)*.2);
+  sg.addColorStop(0,'rgba(255,255,255,0.25)');
+  sg.addColorStop(0.4,'rgba(255,255,255,0.06)');
+  sg.addColorStop(1,'rgba(255,255,255,0)');
+  ctx.fillStyle=sg;ctx.fillRect(0,0,w,h);
+  clicks[i].forEach(c=>{
+    const age=(t-c.t)/1000;if(age>1.5)return;
+    for(let ring=0;ring<3;ring++){
+      const rad=(age+ring*.15)*w*.35;
+      ctx.beginPath();ctx.arc(c.x*w,c.y*h,rad,0,Math.PI*2);
+      ctx.strokeStyle=`rgba(255,255,255,${(1-age/1.5)*.3})`;ctx.lineWidth=.8;ctx.stroke();
+    }
+  });
+}
+
+function hslToRgb(h,s,l){
+  let r,g,b;
+  if(s===0){r=g=b=l}else{
+    const q=l<.5?l*(1+s):l+s-l*s,p=2*l-q;
+    r=hue2rgb(p,q,h+1/3);g=hue2rgb(p,q,h);b=hue2rgb(p,q,h-1/3);
+  }
+  return[Math.round(r*255),Math.round(g*255),Math.round(b*255)];
+}
+function hue2rgb(p,q,t){if(t<0)t+=1;if(t>1)t-=1;if(t<1/6)return p+(q-p)*6*t;if(t<.5)return q;if(t<2/3)return p+(q-p)*(2/3-t)*6;return p;}
+
+function loop(t){
+  drawNeural(t);
+  drawPlasma(t);
+  drawGravity(t);
+  drawAurora(t);
+  drawChrome(t);
+  requestAnimationFrame(loop);
+}
+requestAnimationFrame(loop);
+</script>
