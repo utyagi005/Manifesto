@@ -10,7 +10,7 @@ This manifesto shares what I care about as a computer science student, builder, 
 
 ## View
 
-Open the live deploy preview here: [Uday Tyagi Manifesto](https://agent-69e813d2cd3941a34e6cdac4--utyagimanifesto.netlify.app).
+Open the live site here: [Uday Tyagi Manifesto](https://utyagi005.github.io/Manfiesto/).
 
 You can also open `Manifesto.html` locally in a browser.
 
@@ -18,7 +18,7 @@ You can also open `Manifesto.html` locally in a browser.
 
 I'm Uday Tyagi, a third-year Computer Science student at Western University.
 
-I'm seeking a software internship starting May 2026, especially in software development, full-stack, data, or AI engineering.
+I'm seeking a software internship starting September 2026, especially in software development, full-stack, data, or AI engineering.
 
 ## Contact
 
