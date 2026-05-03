@@ -10,7 +10,7 @@ This manifesto shares what I care about as a computer science student, builder, 
 
 ## View
 
-Open the live site here: [Uday Tyagi Manifesto](https://utyagi005.github.io/Manfiesto/).
+Open the live site here: [Uday Tyagi Manifesto](https://utyagi005.github.io/Manifesto/).
 
 You can also open `Manifesto.html` locally in a browser.
 
